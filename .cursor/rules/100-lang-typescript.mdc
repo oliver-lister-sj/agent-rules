@@ -14,6 +14,12 @@ This rule applies when working with any TypeScript files (`.ts` and `.tsx`), inc
 
 ## Standards
 
+### Code Quality & "No-Gos" (Deslop)
+
+- **No AI Slop**: Avoid patterns that look obviously AI-generated or inconsistent with the codebase.
+- **No Unnecessary Defensive Checks**: Avoid extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially in trusted codepaths).
+- **Consistent Style**: Match the existing style of the file exactly.
+
 ### Type Annotations
 
 - Use explicit return types for all exported functions

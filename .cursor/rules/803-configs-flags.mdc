@@ -1,0 +1,100 @@
+---
+description: Standards for using useConfigs and useFlags hooks for configuration and feature flags.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Configs and Flags Usage
+
+## Context
+Apply this rule when accessing application configuration or feature flags in React components or hooks.
+
+## Standards
+
+### Configuration (`useConfigs`)
+- Use the `useConfigs` hook to access application-wide configuration.
+- **Purpose**: Use for environment-specific values like API keys, client IDs, currency settings, or endpoints.
+- **Restriction**: NEVER use `useConfigs` for user-facing strings or UI text. Use `useResources` or localization files instead.
+- Import from `@hooks/useConfigs`.
+- Destructure the specific configuration properties you need.
+- **Type Safety**: The hook returns `ConfigData`.
+
+### Feature Flags (`useFlags`)
+- Use the `useFlags` hook to access feature flags.
+- Import from `@hooks/useFlags`.
+- Destructure the specific flags you need.
+- **Type Safety**: The hook returns `FlagsData`.
+
+### Testing & Mocking
+- **Global Mocks**: Use the global mocks provided in `@test/jest-global-mocks` when possible.
+- **Mocking Strategy**:
+  - Import the mock helper: `import { useConfigsMock, useFlagsMock } from '@test/jest-global-mocks';`
+  - Set return values in your test: `useFlagsMock.mockReturnValue({ enableFeature: true });`
+  - Reset mocks in `beforeEach` or via `jest.clearMocks()` (handled by global config).
+
+## Examples
+
+### Using Configs
+
+❌ **Bad**:
+```typescript
+// 1. Importing the whole object without destructuring
+// 2. Using configs for user-facing text (title) - Use useResources instead
+import useConfigs from '@hooks/useConfigs';
+
+const MyComponent = () => {
+  const configs = useConfigs();
+  
+  return (
+    <div>{configs.sidebar.title}</div>
+  );
+};
+```
+
+✅ **Good**:
+```typescript
+import useConfigs from '@hooks/useConfigs';
+
+const MyComponent = () => {
+  // Destructuring specific config values (API keys, endpoints, etc.)
+  const { googleMapsApiKey } = useConfigs();
+  
+  return (
+    <GoogleMap apiKey={googleMapsApiKey} />
+  );
+};
+```
+
+### Using Flags
+
+✅ **Good**:
+```typescript
+import useFlags from '@hooks/useFlags';
+
+const MyComponent = () => {
+  const { enableNewFeature } = useFlags();
+
+  if (!enableNewFeature) return null;
+
+  return (
+    <div>New Feature</div>
+  );
+};
+```
+
+### Testing
+
+✅ **Good**:
+```typescript
+import { useFlagsMock } from '@test/jest-global-mocks';
+
+describe('MyComponent', () => {
+  it('renders when feature is enabled', () => {
+    useFlagsMock.mockReturnValue({
+      enableNewFeature: true
+    });
+    
+    // render and assert...
+  });
+});
+```

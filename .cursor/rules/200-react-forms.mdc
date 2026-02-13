@@ -1,0 +1,173 @@
+---
+description: Standards for form handling, validation, and UX using React Hook Form and Zod.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# React Form Handling
+
+## Context
+Apply this rule when creating or modifying forms in React applications.
+
+## Standards
+
+### Library Selection
+- **Complex Forms**: Use `react-hook-form` combined with `zod` for validation.
+  - Use when: Form has many fields, complex validation rules, async validation, or dependent fields.
+- **Simple Forms**: Use `useState` with manual validation.
+  - Use when: Form has 1-2 fields with simple requirements (e.g., a single search input).
+
+### User Experience (UX)
+- **Submit Button**: NEVER disable the submit button based on form validity (`isValid`).
+  - **Why**: Disabling buttons prevents users from understanding *why* they can't submit. It provides a poor experience.
+  - **Correct Behavior**: Allow the user to click "Submit". If invalid, trigger validation and show error messages inline.
+  - **Exception**: Disable the button only when `isSubmitting` (loading) or `isValidating` (async checks).
+- **Validation Messages**: Display validation messages below the input fields using `helperText` (MUI) or similar patterns.
+
+### Validation Logic
+- **Schemas**: Define validation schemas using `zod`.
+- **Async Validation**: Use `superRefine` or `refine` in the Zod schema for asynchronous checks (e.g., checking if an email exists).
+  - Do NOT mix async logic inside component event handlers if it belongs in the validation schema.
+- **Complex Logic**: For cross-field validation or business logic (e.g., "at least one contact method required"), use `superRefine`.
+
+### Directory Structure
+- **Shared Schemas**: Place reusable Zod schemas in `src/schemas/`.
+- **Feature Schemas**: Colocate form-specific schemas with the component or hook that uses them.
+
+### Data Integration
+- **Default Values**: Create a helper function (e.g., `getFormDefaults`) to transform API data into the form shape.
+- **Updates**: Use `useEffect` to call `reset(getFormDefaults(data))` when the source data changes. This ensures the form stays in sync with backend data.
+
+## Examples
+
+### ✅ Good: Handling External Data
+
+```tsx
+// 1. Define defaults helper
+const getContactDefaults = (data?: UserProfile) => ({
+  email: data?.email ?? '',
+  phoneNumber: data?.phoneNumber ?? '',
+});
+
+interface Props {
+  data?: UserProfile;
+}
+
+export const ContactForm = (props: Props) => {
+  const { data } = props;
+  const { reset, control } = useForm({
+    defaultValues: getContactDefaults(data), // 2. Set initial defaults
+    resolver: zodResolver(schema)
+  });
+
+  // 3. Sync with external data updates
+  useEffect(() => {
+    if (data) {
+      reset(getContactDefaults(data));
+    }
+  }, [data, reset]);
+
+  return <form>...</form>;
+};
+```
+
+### ❌ Bad: Disabling Submit Button
+
+```tsx
+const { formState: { isValid } } = useForm();
+
+// BAD: User doesn't know why they can't click
+<Button disabled={!isValid} type="submit">
+  Submit
+</Button>
+```
+
+### ✅ Good: Complex Form (Zod + React Hook Form)
+
+```tsx
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import z from 'zod';
+
+const schema = z.object({
+  email: z.string().email(),
+  username: z.string().min(3)
+}).superRefine(async (data, ctx) => {
+  // Async validation example
+  const isAvailable = await checkUsernameAvailability(data.username);
+  if (!isAvailable) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Username is taken",
+      path: ["username"]
+    });
+  }
+});
+
+export const RegistrationForm = () => {
+  const { 
+    register, 
+    handleSubmit, 
+    formState: { errors, isSubmitting, isValidating } 
+  } = useForm({
+    resolver: zodResolver(schema)
+  });
+
+  const onSubmit = async (data) => {
+    await saveData(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <TextField
+        {...register('email')}
+        error={!!errors.email}
+        helperText={errors.email?.message}
+      />
+      
+      {/* Button is enabled even if invalid, only disabled during processing */}
+      <LoadingButton 
+        type="submit" 
+        loading={isSubmitting || isValidating}
+        disabled={isSubmitting || isValidating}
+      >
+        Register
+      </LoadingButton>
+    </form>
+  );
+};
+```
+
+### ✅ Good: Simple Form (useState)
+
+```tsx
+import { useState } from 'react';
+
+export const SimpleSearch = ({ onSearch }) => {
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = () => {
+    if (query.length < 3) {
+      setError('Search term must be at least 3 characters');
+      return;
+    }
+    setError('');
+    onSearch(query);
+  };
+
+  return (
+    <Stack>
+      <TextField
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        error={!!error}
+        helperText={error}
+      />
+      <Button onClick={handleSubmit}>
+        Search
+      </Button>
+    </Stack>
+  );
+};
+```

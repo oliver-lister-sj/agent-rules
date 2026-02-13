@@ -1,0 +1,90 @@
+---
+description: Standards for handling user permissions and conditional rendering using @swipejobs/permissions-conditional. Use when checking user access or hiding UI elements based on roles.
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Permissions & Conditional Rendering
+
+## Context
+
+Apply this rule when implementing access control, feature toggles, or conditional rendering based on user permissions in React components. This relies on the `@swipejobs/permissions-conditional` library.
+
+## Standards
+
+### Provider Setup
+- Ensure the `PermissionsProvider` wraps the application or component tree.
+- Set the `desktopType` prop correctly (`'service'`, `'customer'`, or `'worker'`).
+
+### Checking Permissions
+- **Hook Approach**: Use `usePermissionsContext` to access the `hasPermission` function.
+  - Preferred for logic inside components, event handlers, or complex conditions.
+- **Component Approach**: Use the `<Permission>` component for declarative conditional rendering of UI elements.
+  - Preferred for simple show/hide logic in JSX.
+
+### Best Practices
+- **ALWAYS** use the `UserPermissions` enum from constants instead of hardcoded strings (e.g., `UserPermissions.OrderCreate` instead of `'order:create'`).
+- Avoid accessing `localStorage` directly for permissions; rely on the provider.
+- For v3.x+, avoid importing `hasPermission` directly from the package; use the hook instead.
+
+## Examples
+
+❌ **Bad**: Direct import of `hasPermission` or using hardcoded strings.
+
+```tsx
+import { hasPermission } from '@swipejobs/permissions-conditional'; 
+
+const CreateButton = () => {
+  // ❌ Avoid direct import if using v3 Provider pattern
+  // ❌ Avoid hardcoded string 'order:create'
+  if (hasPermission('order:create')) {
+    return <button>Create</button>;
+  }
+  return null;
+};
+```
+
+✅ **Good**: Using `usePermissionsContext` with `UserPermissions` enum.
+
+```tsx
+import { usePermissionsContext } from '@swipejobs/permissions-conditional';
+import { UserPermissions } from '@/constants/permissions'; // Adjust import path as needed
+
+const OrderActions = () => {
+  const { hasPermission } = usePermissionsContext();
+  
+  const handleEdit = () => {
+    if (hasPermission(UserPermissions.OrderEdit)) {
+      // Perform edit logic
+    }
+  };
+
+  if (!hasPermission(UserPermissions.OrderView)) return null;
+
+  return (
+    <div>
+      <button onClick={handleEdit}>Edit Order</button>
+    </div>
+  );
+};
+```
+
+✅ **Good**: Using `<Permission>` component with `UserPermissions` enum.
+
+```tsx
+import { Permission } from '@swipejobs/permissions-conditional';
+import { UserPermissions } from '@/constants/permissions';
+
+const Toolbar = () => {
+  return (
+    <div className="toolbar">
+      <Permission permission={UserPermissions.OrderCreate}>
+        <button>New Order</button>
+      </Permission>
+      <Permission permission={UserPermissions.WorkerView}>
+        <button>View Workers</button>
+      </Permission>
+    </div>
+  );
+};
+```

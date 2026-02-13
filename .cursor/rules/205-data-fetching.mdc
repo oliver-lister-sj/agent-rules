@@ -1,0 +1,125 @@
+---
+description: Standards for data fetching using React Query (TanStack Query), Axios, and project-specific helpers.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Data Fetching Standards
+
+## Context
+Apply this rule when implementing data fetching or mutation logic. This project uses `@tanstack/react-query` (v5) with custom Axios wrappers and service path helpers.
+
+## Standards
+
+### 1. API Requests
+- **Mandatory Usage**: ALWAYS use `useQuery` or `useMutation` for API requests to backend services.
+- **No Direct Calls**: Never call Axios methods directly in components or `useEffect`.
+- **Simple Functions**: Keep the API request functions (queryFn/mutationFn) simple and focused on the request itself.
+
+### 2. Custom Hooks
+- **Encapsulation**: Always wrap `useQuery` and `useMutation` in custom hooks (e.g., `useGetWorkerProfile`, `useUpdateJobStatus`).
+- **Location**: Place these hooks in `src/hooks/` or `src/components/[Feature]/hooks/`.
+- **Return Values**: Return the query result or specific data/mutation functions needed by the component.
+
+### 3. Query Keys & Service Keys
+- **Query Keys**: Use the `QueryBaseKey` (or `QueryKeys`) enum for the first element of the query key array.
+  - Pattern: `queryKey: [QueryBaseKey.WorkerProfile, workerId]`
+- **Service Keys**: Use `QueryServiceKeys` (or `ServiceKeys`) enum for the service name in `getServicePath`.
+  - Avoid hardcoded service strings like `"workerPayroll"`.
+
+### 4. Endpoints & Axios
+- **Service Path**: Use `getServicePath(serviceName, endpointName)` from `useServiceEndpoint` hook to resolve URLs.
+- **Axios Wrappers**: Use the typed Axios helpers from `@services/Axios`:
+  - `GetAsJSON<ResponseDto>(url, config)`
+  - `GetWithParamsAsJSON<ResponseDto>(url, params)`
+  - `PostAsJSON<ResponseDto>(url, body)`
+  - `PutAsJSON`, `DeleteAsJSON`, etc.
+- **No Manual Parsing**: These wrappers return the `data` property directly. Do not `.json()` or access `.data` manually.
+
+### 5. React Query v5 Best Practices
+- **Queries (`useQuery`)**:
+  - **No Callbacks**: Do NOT use `onSuccess`, `onError`, or `onSettled` in `useQuery` options (removed in v5).
+  - **Side Effects**: Handle side effects in `useEffect` based on `data` or `error`, or use derived state during render.
+  - **Transformation**: Use the `select` option to transform data.
+- **Mutations (`useMutation`)**:
+  - **Callbacks Allowed**: Use `onSuccess`, `onError`, `onSettled` for side effects.
+  - **Async**: Prefer `mutateAsync` if you need to await the result in the component (e.g., for form submission).
+
+### 6. Invalidation & Cache Updates
+- **Invalidate on Mutation**: Always invalidate relevant query keys in the `onSuccess` callback of a mutation to refetch fresh data.
+- **Usage**: Use `queryClient.invalidateQueries({ queryKey: [...] })`.
+- **Optimistic Updates**: Use only when necessary for immediate UI feedback; otherwise, rely on invalidation.
+
+## Examples
+
+### ✅ Good: Fetching Data (Query)
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { useServiceEndpoint } from '@swipejobs/react-hooks';
+import { GetAsJSON } from '@services/Axios';
+import { QueryBaseKey } from '@models/QueryBaseKey';
+import { QueryServiceKeys } from '@models/QueryServiceKeys';
+
+// 1. Define simple API function
+const fetchWorkerProfile = async (url: string, workerId: string) => {
+  return GetAsJSON<WorkerProfileDto>(url, { params: { workerId } });
+};
+
+// 2. Wrap in custom hook
+export const useGetWorkerProfile = (workerId: string) => {
+  const { getServicePath } = useServiceEndpoint();
+
+  return useQuery({
+    queryKey: [QueryBaseKey.WorkerProfile, workerId],
+    queryFn: () => {
+      const url = getServicePath(QueryServiceKeys.WORKER_PROFILE, 'getProfile');
+      return fetchWorkerProfile(url, workerId);
+    },
+    enabled: !!workerId,
+  });
+};
+```
+
+### ✅ Good: Mutating Data with Invalidation
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useServiceEndpoint } from '@swipejobs/react-hooks';
+import { PostAsJSON } from '@services/Axios';
+import { QueryBaseKey } from '@models/QueryBaseKey';
+
+export const useUpdateWorkerStatus = () => {
+  const { getServicePath } = useServiceEndpoint();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (status: string) => {
+      const url = getServicePath('workerProfile', 'updateStatus');
+      return PostAsJSON(url, { status });
+    },
+    onSuccess: () => {
+      // ✅ Invalidate relevant queries to refetch data
+      queryClient.invalidateQueries({ queryKey: [QueryBaseKey.WorkerProfile] });
+    },
+    onError: (error) => {
+      console.error('Failed to update status', error);
+    }
+  });
+};
+```
+
+### ❌ Bad: Inline & Hardcoded
+
+```typescript
+// Bad: Inline useQuery, hardcoded strings, raw axios
+const { data } = useQuery({
+  queryKey: ['worker-profile', id], // Bad: Hardcoded string key
+  queryFn: () => axios.get(`/api/worker/${id}`), // Bad: Hardcoded URL
+  onSuccess: (data) => console.log(data) // Bad: onSuccess not supported in v5 queries
+});
+```
+
+## Related Skills
+
+- [manage-configs](../skills/manage-configs/SKILL.md): Use this skill to add new endpoint configurations to the config repos, which `getServicePath` relies on.

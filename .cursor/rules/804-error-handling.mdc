@@ -1,0 +1,103 @@
+---
+description: Standards for error handling, messaging, and logging in the application.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Error Handling & Messaging
+
+## Context
+Apply this rule when implementing error handling in components, hooks, mutations, or form submissions.
+
+## Standards
+
+### User Messaging
+- **Async Queries (`useQuery`)**:
+  - When a query fails (`isError`), display an **in-flow** error message.
+  - Use the MUI `Alert` component with `severity="error"`.
+  - **Recovery**: Ensure the error message is removed/hidden when the user retries the action or the query refetches successfully.
+  - Do NOT use a toast/status message for initial load failures if they can be shown in context.
+- **Mutations & Actions**:
+  - When a user action fails (e.g., form submit, button click), display a **toast** message.
+  - Use `showStatusMessage` from `useAppStatusManager`.
+  - Import `AppStatus` and `useAppStatusManager` from `@swipejobs/fe-core-elements`.
+  - Usage: `showStatusMessage(AppStatus.isError, resources.errorMessage)`.
+
+### Logging
+- **No Console Logs**: Do NOT use `console.log`, `console.warn`, or `console.error` in production code.
+- **Client Tracking**: Critical errors should be captured in a `fe-client-tracking` event if they impact user experience or conversion.
+
+## Examples
+
+### Async Query Error (In-Flow)
+
+❌ **Bad**:
+```typescript
+const { isError } = useQuery(...);
+
+if (isError) {
+  // Bad: Using toast for page-level error
+  showStatusMessage(AppStatus.isError, 'Failed to load');
+  return null;
+}
+```
+
+✅ **Good**:
+```typescript
+import { Alert } from '@mui/material';
+import { resources } from '@resources/index';
+
+const { isError, error } = useQuery(...);
+
+if (isError) {
+  return (
+    <Alert severity="error">
+      {resources.failedToLoadData}
+    </Alert>
+  );
+}
+```
+
+### Mutation Error (Toast)
+
+❌ **Bad**:
+```typescript
+const mutation = useMutation({
+  onError: (error) => {
+    console.error('Mutation failed', error); // Bad: Console log
+    alert('Error!'); // Bad: Native alert
+  }
+});
+```
+
+✅ **Good**:
+```typescript
+import { AppStatus, useAppStatusManager } from '@swipejobs/fe-core-elements';
+import { resources } from '@resources/index';
+
+const { showStatusMessage } = useAppStatusManager();
+
+const mutation = useMutation({
+  onError: () => {
+    // Good: Toast for action failure
+    showStatusMessage(AppStatus.isError, resources.saveFailed);
+    
+    // Optional: Track event
+    // trackEvent(ClientTrackingCategory.Error, ...);
+  }
+});
+```
+
+### Form Submission
+
+✅ **Good**:
+```typescript
+const handleSubmit = async (data) => {
+  try {
+    await submitData(data);
+    showStatusMessage(AppStatus.isSuccess, resources.saveSuccess);
+  } catch (error) {
+    showStatusMessage(AppStatus.isError, resources.genericError);
+  }
+};
+```

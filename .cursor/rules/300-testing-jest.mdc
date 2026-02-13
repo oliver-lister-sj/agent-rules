@@ -1,0 +1,96 @@
+---
+description: Standards for writing Jest unit tests in TypeScript using React Testing Library
+globs: **/*.test.ts, **/*.test.tsx, **/src/tests/**/*
+alwaysApply: false
+---
+
+# Jest Testing Standards
+
+## Context
+Apply this rule when writing or modifying unit tests for TypeScript components or functions.
+
+## Standards
+
+### Analyze Existing Tests
+- Search for existing test files to understand current coverage.
+- **Reference**: Look at existing test files for structure patterns, but prioritize these rules if they conflict.
+- Only cover new or previously untested functionality.
+- Do not repeat or modify existing test cases unless necessary.
+- Create new test files from scratch if none exist.
+
+### Mock Data & Utilities
+- **Check First**: Before creating new mocks, check `src/test` (global setup) and `src/mocks` to see if the hook or data is already mocked.
+- **Local Mocks**: Create mock data or utilities within the test file if used only there.
+- **Shared Mocks**: If a mock is reused across multiple components/tests, add it to `src/mocks`.
+- **Global Setup & Mocks**:
+  - If an import needs to be mocked globally (e.g., used in many files), create a file in `src/test`.
+  - All files in `src/test` are automatically imported as Jest setup files.
+  - **MFE/Federated Modules**: For Webpack Module Federation imports, mock them globally in `src/test` using the virtual option:
+    ```typescript
+    jest.mock('remoteApp/Component', () => ({
+      Component: () => 'MockedComponent'
+    }), { virtual: true });
+    ```
+- Use `jest.mock('/path')` alongside `jest.mocked(Module)` for module mocking.
+- Do not use `require()` for mocking unless using `jest.requireActual()`.
+
+### Writing Tests
+- **Scope**: Test only Utils, Components, Hooks, and Services.
+- **Focus**: Test core functionality; avoid excessive edge cases.
+- **Conciseness**: Keep test files focused; avoid >10 test cases per file.
+- **Data Driven**: Use `it.each` for repeated logic (especially for utils) to reduce code duplication.
+- Write independent test cases that can run in any order.
+- Use `data-testid` attributes for querying (favoured over class names or text).
+  - **Exception**: It IS permitted to add `data-testid` attributes to components if they are missing.
+- **Strict Rule**: Do NOT modify components, hooks, or implementation files solely to facilitate testing (other than adding `data-testid`). Instead, update tests and mocks to properly handle the existing implementation.
+- Use standard Jest assertions (e.g., `toBeDefined()`) instead of `jest-dom` matchers like `toBeInTheDocument()` if not configured.
+- Use explicit TypeScript types; avoid `any`.
+- Use `as unknown as Type` casting to avoid mocking entire objects.
+- Do not test styling or CSS classes.
+- Do not mock `useResources` hooks; use resource keys directly (e.g., `getByText('errorMessage')`).
+- Use one `describe` block per file unless extensive functionality requires more.
+
+## Examples
+
+❌ **Bad**:
+```typescript
+// Using any and implicit types
+const mockData: any = { id: 1 };
+
+// Querying by class
+const element = container.querySelector('.my-class');
+
+// Testing styles
+expect(element).toHaveStyle('color: red');
+
+// Mocking useResources
+jest.mock('useResources', () => ({
+  useResources: () => ({ errorMessage: 'Error' })
+}));
+```
+
+✅ **Good**:
+```typescript
+// Explicit types and casting
+const mockData = { id: 1 } as unknown as UserType;
+
+// Querying by testId
+const element = screen.getByTestId('my-component');
+
+// Standard assertions
+expect(element).toBeDefined();
+
+// Using resource keys directly
+expect(screen.getByText('errorMessage')).toBeDefined();
+
+// Proper mocking
+jest.mock('./api');
+const mockedApi = jest.mocked(api);
+```
+
+## Common Commands
+
+```bash
+# Run tests for a specific file
+npm test -- path/to/file.test.ts
+```

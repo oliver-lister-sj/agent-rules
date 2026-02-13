@@ -16,10 +16,15 @@ Apply this rule when adding new files or refactoring the directory structure in 
 | Directory | Purpose |
 | :--- | :--- |
 | `components/` | React components, organized by feature. |
+| `context/` | React Context definitions and providers. |
 | `hooks/` | Custom React hooks shared across multiple components. |
+| `mocks/` | Shared mock data and factories for tests. |
 | `models/` | TypeScript interfaces and type definitions (domain models). |
+| `reducers/` | Shared state reducers. |
 | `resources/` | Localization resources, text strings, and constants. |
+| `schemas/` | Zod validation schemas. |
 | `services/` | API services and external integrations. |
+| `test/` | Global Jest setup files and global mocks (automatically loaded). |
 | `utils/` | Shared utility functions and helpers. |
 | `constants/` | Global constants and configuration values. |
 

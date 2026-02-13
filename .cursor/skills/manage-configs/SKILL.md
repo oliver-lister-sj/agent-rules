@@ -60,7 +60,7 @@ There is a special `shared` directory within each partner folder (e.g., `overrid
 
 ### 5. How Configs Are Generated
 
-In the main core repositories (e.g., `fe-service-desktop-core`), running `npm run start` (or `npm run full-start`) triggers a process that generates the configurations.
+In the main core repositories (e.g., `fe-service-desktop-core`), the application start process triggers a process that generates the configurations.
 
 1.  The start script runs a watcher (via `configs-fast` script).
 2.  This watcher uses `@swipejobs/fe-core-library` to monitor changes in the `base` and `overrides` directories of the config repo.
@@ -76,7 +76,7 @@ In the main core repositories (e.g., `fe-service-desktop-core`), running `npm ru
 1.  Read the target file to understand the current structure.
 2.  Add or update the key/value pair.
 3.  Ensure valid JSON syntax.
-4.  If adding a new app, ensure you run `npm run add-apps` first.
+4.  If adding a new app, ensure you execute the `add-apps` script first.
 
 ### 7. Validate Changes
 
