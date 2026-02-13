@@ -1,0 +1,215 @@
+---
+description: Standards for React component structure, props, modularity, and performance.
+globs: **/*.{tsx,ts}
+alwaysApply: false
+---
+
+# React Components
+
+Standards for writing React components, including structure, props, modularity, and performance.
+
+## Context
+
+Apply this rule when creating or refactoring React components (`.tsx`).
+
+## Standards
+
+### Component Structure
+
+- Use functional components exclusively
+- Use `React.FC<Props>` for functional components definitions
+- Use TypeScript interfaces for props
+- Export components as named exports
+- Keep component files focused (one main component per file)
+- Split multiple components/render functions into separate files
+- Use modular architecture (small, focused components)
+- Components should be stateless/presentation-focused where possible
+
+### Props
+
+- Define prop types using TypeScript interfaces
+- Name props interface `Props` if not exported, or `{ComponentName}Props` if exported
+- Do NOT destructure props in function parameters
+- Destructure props inside the function body
+- Provide sensible defaults where appropriate
+- Mark optional props explicitly with `?`
+
+### Performance
+
+- Use `React.memo` for expensive components to prevent unnecessary re-renders
+- Avoid inline object/array literals in JSX props (they break `React.memo` and `useEffect` dependencies)
+- Pass primitives or stable references (via `useCallback`/`useMemo`) to child components
+
+## Examples
+
+### Modularity
+
+❌ **Bad**:
+
+```tsx
+export const Dashboard = () => {
+  // Too many responsibilities in one file
+  const Header = () => <header>...</header>;
+  const Sidebar = () => <aside>...</aside>;
+  const Content = () => <main>...</main>;
+
+  return (
+    <div>
+      <Header />
+      <div className="flex">
+        <Sidebar />
+        <Content />
+      </div>
+    </div>
+  );
+};
+```
+
+✅ **Good**:
+
+```tsx
+// dashboard/Dashboard.tsx
+import { Box } from '@mui/material';
+import { Header } from './Header';
+import { Sidebar } from './Sidebar';
+import { Content } from './Content';
+
+export const Dashboard: React.FC = () => {
+  return (
+    <Box>
+      <Header />
+      <Box display="flex">
+        <Sidebar />
+        <Content />
+      </Box>
+    </Box>
+  );
+};
+```
+
+### Component Structure
+
+❌ **Bad**:
+
+```tsx
+export default function UserProfile(props: any) {
+  return <div>{props.name}</div>;
+}
+```
+
+✅ **Good**:
+
+```tsx
+import { Box, Typography, Avatar } from '@mui/material';
+
+interface Props {
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+export const UserProfile: React.FC<Props> = (props) => {
+  const { name, email, avatar } = props;
+
+  return (
+    <Box>
+      {avatar && <Avatar src={avatar} alt={name} />}
+      <Typography variant="h2">{name}</Typography>
+      <Typography variant="body1">{email}</Typography>
+    </Box>
+  );
+};
+```
+
+### Props with Defaults
+
+❌ **Bad**:
+
+```tsx
+interface ButtonProps {
+  variant: string;
+  size: string;
+}
+
+export const Button = (props: ButtonProps) => {
+  const variant = props.variant || 'primary';
+  const size = props.size || 'medium';
+  // ...
+};
+```
+
+✅ **Good**:
+
+```tsx
+import { Button } from '@mui/material';
+
+interface Props {
+  variant?: 'contained' | 'outlined' | 'text';
+  size?: 'small' | 'medium' | 'large';
+  children: React.ReactNode;
+}
+
+export const Button: React.FC<Props> = (props) => {
+  const { variant = 'contained', size = 'medium', children } = props;
+
+  return (
+    <Button variant={variant} size={size}>
+      {children}
+    </Button>
+  );
+};
+```
+
+### Conditional Rendering
+
+❌ **Bad**:
+
+```tsx
+function MyComponent({ isLoading, error, data }: Props) {
+  if (isLoading) {
+    return <div>Loading...</div>;
+  } else if (error) {
+    return <div>Error: {error}</div>;
+  } else if (data) {
+    return <div>{data.value}</div>;
+  } else {
+    return <div>No data</div>;
+  }
+}
+```
+
+✅ **Good**:
+
+```tsx
+const MyComponent: React.FC<Props> = (props) => {
+  const { isLoading, error, data } = props;
+
+  if (isLoading) {
+    return <Spinner />;
+  }
+  if (error) {
+    return <ErrorMessage error={error} />;
+  }
+  if (!data) {
+    return <EmptyState />;
+  }
+
+  return <DataDisplay data={data} />;
+};
+```
+
+### Performance (React.memo)
+
+✅ **Good**:
+
+```tsx
+import React from 'react';
+import { Box } from '@mui/material';
+
+// Wrap expensive components in React.memo
+const ExpensiveChild = React.memo((props: ChildProps) => {
+  const { onAction, config } = props;
+  // Expensive rendering logic
+  return <Box>...</Box>;
+});
+```

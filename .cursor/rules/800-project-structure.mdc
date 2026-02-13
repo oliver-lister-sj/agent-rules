@@ -1,0 +1,66 @@
+---
+description: Directory structure and file organization standards for frontend projects.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Project Structure
+
+## Context
+Apply this rule when adding new files or refactoring the directory structure in frontend projects.
+
+## Standards
+
+### Top-Level Directory Structure (`src/`)
+
+| Directory | Purpose |
+| :--- | :--- |
+| `components/` | React components, organized by feature. |
+| `hooks/` | Custom React hooks shared across multiple components. |
+| `models/` | TypeScript interfaces and type definitions (domain models). |
+| `resources/` | Localization resources, text strings, and constants. |
+| `services/` | API services and external integrations. |
+| `utils/` | Shared utility functions and helpers. |
+| `constants/` | Global constants and configuration values. |
+
+### Component Structure (`src/components/[FeatureName]/`)
+
+- **Feature Folders**: Group related components into a feature folder (e.g., `TalentScorePanel`).
+- **Entry Point**: Each feature folder MUST have an `index.tsx` that exports the main component.
+- **Sub-components**: Place sub-components in their own sub-folders within the feature folder (e.g., `TalentScorePanel/Content`).
+- **Tests**: Colocate tests in a `__tests__` directory within the component's folder.
+  - **Naming**: Test files MUST use the component/folder name (e.g., `TalentScorePanel.test.tsx`), NOT `index.test.tsx`.
+- **Styles**: Keep styles (using `makeSxStyles`) within the component file or in a separate file in the same directory if large.
+
+### File Placement Guidelines
+
+- **New Feature**: Create a new folder in `src/components/`.
+- **Shared Logic**: Extract to a custom hook in `src/hooks/` if used by multiple features.
+- **API Calls**: Define in `src/services/` and use via hooks.
+- **Types**: Define in `src/models/` if shared, or colocated with the component if specific to it.
+
+## Examples
+
+### Feature Component Structure
+
+```
+src/components/TalentScorePanel/
+├── index.tsx              # Main export
+├── Content/               # Sub-component folder
+│   ├── index.tsx
+│   └── __tests__/         # Tests for Content
+│       └── Content.test.tsx
+├── ScoreItem/             # Sub-component folder
+│   └── index.tsx
+└── __tests__/             # Tests for TalentScorePanel
+    └── TalentScorePanel.test.tsx
+```
+
+### Shared Hook Structure
+
+```
+src/hooks/
+├── useMatchingFactors.ts  # Shared hook
+└── __tests__/             # Tests for hooks
+    └── useMatchingFactors.test.ts
+```

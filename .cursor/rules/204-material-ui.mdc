@@ -1,0 +1,121 @@
+---
+description: Best practices and coding standards for Material-UI (MUI) development in this project, specifically focusing on styling with makeSxStyles.
+globs: **/*.{jsx,tsx,js,ts}
+alwaysApply: false
+---
+
+# Material-UI (MUI) Best Practices
+
+## Context
+Apply this rule when developing React applications using Material-UI (MUI). This covers styling, component architecture, performance optimization, and security practices specific to MUI and the `swipejobs` ecosystem.
+
+## Standards
+
+### Styling Patterns (Project Specific)
+- **Primary Styling Method**: Use `makeSxStyles` from `@swipejobs/react-hooks`.
+  - Define styles outside the component or in a separate file if large.
+  - Returns a hook (conventionally named `useStyles`) which returns an object of `sx`-compatible style objects.
+- **Applying Styles**:
+  - Instantiate styles: `const css = useStyles();`
+  - Apply to components: `sx={css.styleKey}`
+- **Theme Access**:
+  - **Inside `makeSxStyles`**: Use function values for properties that require theme access.
+    ```javascript
+    backgroundColor: (theme) => theme.palette.common.white,
+    padding: (theme) => theme.spacing(2),
+    ```
+  - **Inside Components**: Use `useTheme` hook from `@mui/material/styles` if you need theme values for logic or non-MUI elements.
+- **Avoid**:
+  - Inline `sx` objects (e.g., `sx={{ mt: 2 }}`). **ALWAYS** extract to `makeSxStyles` to keep components clean and styles reusable.
+  - `makeStyles` / `withStyles` (Legacy JSS) unless strictly necessary for legacy code.
+  - `styled` API (unless for very specific reusable primitives where `sx` is insufficient).
+
+### Component Architecture
+- **Separation of Concerns**: Split into Presentational (UI-focused) and Container (data/logic) components.
+- **Composition**: Favor component composition over inheritance.
+- **Controlled Components**: Use controlled components with explicit state management.
+- **Small Components**: Create smaller, focused components that do one thing well.
+
+### Performance
+- **Memoization**: Use `React.memo`, `useMemo`, and `useCallback` to prevent unnecessary re-renders.
+- **Code Splitting**: Use `React.lazy` and `Suspense` for route-based splitting.
+- **Optimization**: Optimize images and avoid memory leaks.
+
+## Examples
+
+### Styling with `makeSxStyles`
+
+❌ **Bad**: Inline `sx` and hardcoded values
+```jsx
+// Bad: Inline sx, hardcoded colors
+<Stack sx={{ 
+  backgroundColor: '#fff', 
+  padding: '16px',
+  border: '1px solid grey' 
+}}>
+  Content
+</Stack>
+```
+
+✅ **Good**: Extracted styles using `makeSxStyles` and Theme
+```jsx
+import { makeSxStyles } from '@swipejobs/react-hooks';
+import { Stack } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+
+// Define styles using makeSxStyles
+const useStyles = makeSxStyles(() => ({
+  container: {
+    // Use theme callback for theme-dependent values
+    backgroundColor: (theme) => alpha(theme.palette.common.white, 0.8),
+    padding: 2, // Uses theme.spacing(2) implicitly in sx
+    border: 1,
+    borderColor: 'divider', // Uses theme.palette.divider
+    backdropFilter: 'blur(10px)',
+  },
+  header: {
+    color: 'primary.main',
+    mb: 2,
+  },
+}));
+
+export const MyComponent = () => {
+  const css = useStyles();
+
+  return (
+    <Stack sx={css.container}>
+      <Box sx={css.header}>Header</Box>
+      Content
+    </Stack>
+  );
+};
+```
+
+### Accessing Theme in Logic
+
+```jsx
+import { useTheme } from '@mui/material/styles';
+
+export const GaugePointer = () => {
+  const theme = useTheme();
+  
+  // Use theme values in logic/SVG
+  return (
+    <circle fill={theme.palette.grey[800]} />
+  );
+};
+```
+
+### Imports
+
+❌ **Bad**: Importing from the root (can affect tree-shaking)
+```javascript
+import { Button, TextField, Grid } from '@mui/material';
+```
+
+✅ **Good**: Specific imports
+```javascript
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Grid from '@mui/material/Grid';
+```

@@ -1,0 +1,143 @@
+---
+description: Guidelines for creating new Cursor rules following project conventions. Use when creating rules, adding standards, or maintaining the rules system.
+alwaysApply: false
+---
+
+# Creating Cursor Rules
+
+This rule teaches the agent how to create new rules following our established conventions.
+
+## Context
+
+Apply this rule when:
+- Creating a new rule file
+- Updating the rules system
+- Adding coding standards or conventions
+- User asks about rule structure
+
+## Naming Convention
+
+Rules follow the pattern: `[prefix]-[category]-[name].mdc`
+
+### Number Ranges
+
+| Range       | Category              | Purpose                                                                                                             | Examples                                               |
+| ----------- | --------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **000-099** | **Core & Behavior**   | Universal standards that apply to _how_ the agent works. High-level directives, persona, and workflow requirements. | `000-core-behavior.mdc` `010-core-planning.mdc`        |
+| **100-199** | **Languages**         | Rules specific to a programming language syntax and base conventions.                                               | `100-lang-typescript.mdc` `110-lang-python.mdc`        |
+| **200-299** | **Frameworks**        | Specific to libraries and frameworks built on top of languages.                                                     | `200-react-patterns.mdc` `210-nextjs-app-router.mdc`   |
+| **300-399** | **Testing & QA**      | Standards for writing tests, mocking, and quality assurance.                                                        | `300-testing-jest.mdc` `310-e2e-cypress.mdc`           |
+| **400-499** | **Tools & Infra**     | Configuration for external tools, DevOps, and version control.                                                      | `400-tool-git.mdc` `410-infra-docker.mdc`              |
+| **800-899** | **Project Specifics** | Business logic, domain knowledge, and specific project workflows that don't fit generic categories.                 | `800-domain-billing.mdc` `810-workflow-deploy.mdc`     |
+| **900-999** | **Meta & System**     | Rules for maintaining the rule system itself. Instructions on how to create new rules or skills.                    | `900-meta-create-rule.mdc` `901-meta-create-skill.mdc` |
+
+## Standard Rule Structure
+
+Every rule MUST follow this template:
+
+```markdown
+---
+description: [Action-oriented description with trigger keywords]
+globs: [File patterns, omit if alwaysApply is true]
+alwaysApply: [true/false]
+---
+
+# [Rule Name]
+
+## Context
+[When to apply this rule]
+
+## Standards
+- [Rule 1]
+- [Rule 2]
+
+## Examples
+[Bad vs Good code examples]
+
+## Common Commands
+[Project-specific commands relevant to this rule]
+```
+
+## Frontmatter Guidelines
+
+### description
+- Action-oriented and specific
+- Include trigger keywords the agent should recognize
+- Describe WHAT the rule does and WHEN to use it
+- Max 1024 characters
+
+### globs
+- File patterns for file-specific rules (e.g., `**/*.ts`, `**/*.tsx`)
+- Omit if `alwaysApply: true`
+
+### alwaysApply
+- `true`: Rule applies to every chat session
+- `false`: Rule applies intelligently based on context or file patterns
+
+## Best Practices
+
+### Keep Rules Concise
+- Target **under 500 lines**
+- Split large rules into multiple focused rules
+- One concern per rule
+
+### Provide Examples
+- Use Bad ❌ vs Good ✅ format
+- Show concrete code examples
+- Reference actual files when applicable
+
+### Be Actionable
+- Write like clear internal documentation
+- Avoid vague guidance
+- Provide specific, implementable standards
+
+### Avoid Duplicating Knowledge
+- Don't copy entire style guides (use linters instead)
+- Don't document every command (agent knows common tools)
+- Point to canonical examples instead of copying code
+- Focus on project-specific patterns
+
+## Examples
+
+### Always Apply Rule
+
+```markdown
+---
+description: Core agent behavior and workflow standards
+alwaysApply: true
+---
+
+# Core Behavior
+
+## Context
+This rule always applies to establish base behavior.
+
+## Standards
+- Use Plan Mode for complex tasks
+- Create todos for multi-step work
+```
+
+### File-Specific Rule
+
+```markdown
+---
+description: TypeScript coding standards and conventions
+globs: **/*.ts
+alwaysApply: false
+---
+
+# TypeScript Standards
+
+## Context
+Apply when working with TypeScript files.
+
+## Standards
+- Use explicit return types for functions
+- Prefer interfaces over type aliases for objects
+```
+
+## Common Commands
+
+- Create a new rule: Use the `scaffold-resource` skill
+- List all rules: `ls .cursor/rules/`
+- Validate rules: Use the `validate-system` skill

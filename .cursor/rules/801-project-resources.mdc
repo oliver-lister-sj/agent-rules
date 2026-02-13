@@ -1,0 +1,135 @@
+---
+description: Standards for handling user-facing text and resources. NEVER hardcode strings.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Resource Management & Localization
+
+## Context
+Apply this rule when adding or modifying user-facing text. The project uses a strict resource management system to handle localization and text updates.
+
+## Standards
+
+### No Hardcoded Strings
+- **NEVER** hardcode user-facing strings in components or logic.
+- All visible text must be retrieved using the `useResources` or `useResourceLookup` hooks.
+
+### Resource Definition (`src/resources/`)
+- Define resource keys in a dedicated file within `src/resources/`.
+- **Naming Convention**: The file MUST be named `{FeatureName}Resources.ts` (e.g., `FiltersResources.ts`, `TalentScorePanelResources.ts`).
+- Use **Enums** to define the mapping between local keys and translation keys.
+- Define a **Context** string constant for the feature.
+
+### Naming Conventions
+- **File Name**: `{FeatureName}Resources.ts` (e.g., `TalentScorePanelResources.ts`).
+- **Enums**: `{FeatureName}Resources` (e.g., `TalentScorePanelResources`).
+- **Context**: `{featureName}Context` (camelCase) (e.g., `talentScorePanelContext`).
+- **Keys**: camelCase for the enum key.
+- **Values**: dot.notation for the translation key (e.g., `jobCategories.label`).
+
+### Usage in Components
+
+#### `useResources` (Standard)
+- Use for static, known keys defined in your Enum.
+- Import `useResources` from `@swipejobs/react-hooks`.
+- Pass the Enum and the Context to the hook.
+- Access strings using the Enum members.
+
+#### `useResourceLookup` (Dynamic)
+- Use when you need to map a dynamic value (like a status, error code, or type) to a resource key.
+- Ideal for mapping API values to user-facing strings (e.g., `status.ACTIVE`, `error.404`).
+- Import `useResourceLookup` from `@swipejobs/react-hooks`.
+- Pass the context to the hook.
+- Call the returned function with the constructed key string.
+
+## Examples
+
+### Defining Resources
+
+```typescript
+// src/resources/TalentScorePanelResources.ts
+
+// 1. Define Context
+export const talentScorePanelContext = 'talentScorePanel';
+
+// 2. Define Enum mapping
+export enum TalentScorePanelResources {
+  title = 'title',
+  subTitle = 'subTitle',
+  scoreLabel = 'score.label',
+  scoreTooltip = 'score.tooltip',
+}
+```
+
+### Using `useResources` (Standard)
+
+❌ **Bad**: Hardcoded strings
+
+```tsx
+const TalentScorePanel = () => {
+  return (
+    <div>
+      <h1>Talent Score</h1>
+      <p>This is your score</p>
+    </div>
+  );
+};
+```
+
+✅ **Good**: Using `useResources`
+
+```tsx
+import { useResources } from '@swipejobs/react-hooks';
+import {
+  TalentScorePanelResources,
+  talentScorePanelContext,
+} from '@resources/TalentScorePanelResources';
+
+const TalentScorePanel = () => {
+  // 1. Fetch resources
+  const resources = useResources(TalentScorePanelResources, {
+    context: talentScorePanelContext,
+  });
+
+  return (
+    <div>
+      {/* 2. Use resources */}
+      <h1>{resources.title}</h1>
+      <p>{resources.subTitle}</p>
+    </div>
+  );
+};
+```
+
+### Using `useResourceLookup` (Dynamic Mapping)
+
+Use this pattern when mapping dynamic values (like API enums) to text.
+
+```tsx
+import { useResourceLookup } from '@swipejobs/react-hooks';
+import { myFeatureContext } from '@resources/MyFeatureResources';
+
+interface Props {
+  status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
+  errorCode?: string;
+}
+
+const StatusBadge = ({ status, errorCode }: Props) => {
+  // Initialize lookup with context
+  const lookupResource = useResourceLookup({ context: myFeatureContext });
+  
+  // 1. Map status enum to resource key: 'status.ACTIVE', 'status.INACTIVE'
+  const statusLabel = lookupResource(`status.${status}`);
+
+  // 2. Map error code to resource key: 'error.E1001', 'error.E500'
+  const errorLabel = errorCode ? lookupResource(`error.${errorCode}`) : null;
+
+  return (
+    <div>
+      <span>{statusLabel}</span>
+      {errorLabel && <span className="error">{errorLabel}</span>}
+    </div>
+  );
+};
+```

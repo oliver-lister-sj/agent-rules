@@ -1,0 +1,253 @@
+---
+description: TypeScript coding standards and conventions for this project. Use when working with TypeScript files.
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript Standards
+
+Standards and conventions for writing TypeScript code in this project.
+
+## Context
+
+This rule applies when working with any TypeScript files (`.ts` and `.tsx`), including React components, utility files, and scripts.
+
+## Standards
+
+### Type Annotations
+
+- Use explicit return types for all exported functions
+- Infer types for simple variables and local functions
+- Avoid `any` - use `unknown` if type is truly unknown
+- Use `type` for unions/intersections, `interface` for object shapes
+- Use `readonly` for immutable properties
+- Use `const` assertions for literal types
+
+### Imports
+
+- Group imports: external libraries, then internal modules
+- Use named exports over default exports
+- Use path aliases defined in `tsconfig.json`
+- Avoid circular dependencies
+
+### Functions
+
+- Keep functions focused (single responsibility)
+- Use descriptive parameter names
+- Prefer pure functions when possible
+- Document complex logic with comments (explain WHY, not WHAT)
+- Use default parameters instead of optional parameters where possible
+
+### Comments
+
+- Avoid adding comments to code unless absolutely necessary
+- Only comment the "why", never the "what" (code should be self-documenting)
+
+### Naming Conventions
+
+- `PascalCase` for types, interfaces, classes, enums
+- `camelCase` for variables, functions, parameters, methods
+- `UPPER_SNAKE_CASE` for constants
+- Prefix interfaces with `I` only if it adds clarity (generally avoid)
+- Use descriptive names (e.g., `isUserLoggedIn` instead of `flag`)
+
+### Async/Await
+
+- Prefer `async/await` over `.then()/.catch()` chains
+- Use `Promise.all` for parallel operations
+- Handle rejections properly
+
+### Null/Undefined
+
+- Use optional chaining (`?.`) for safe access
+- Use nullish coalescing (`??`) for default values
+- Avoid non-null assertions (`!`) unless absolutely necessary
+
+## Examples
+
+### Comments
+
+❌ **Bad**:
+
+```typescript
+// Check if user is logged in
+if (user.isLoggedIn) {
+  // Get data
+  getData();
+}
+```
+
+✅ **Good**:
+
+```typescript
+// We need to check login status here because the token might have expired
+// during the long-running background sync
+if (user.isLoggedIn) {
+  getData();
+}
+```
+
+### Type Annotations
+
+❌ **Bad**:
+
+```typescript
+export function fetchData(endpoint) {
+  return fetch(endpoint).then((r) => r.json());
+}
+```
+
+✅ **Good**:
+
+```typescript
+export async function fetchData(endpoint: string): Promise<DataResponse> {
+  const response = await fetch(endpoint);
+  return response.json();
+}
+```
+
+### Imports
+
+❌ **Bad**:
+
+```typescript
+import { helper } from '../../../utils/helper';
+import express from 'express';
+import { Router } from 'express';
+```
+
+✅ **Good**:
+
+```typescript
+import express, { Router } from 'express';
+
+import { helper } from '@/utils/helper';
+```
+
+### Type vs Interface
+
+❌ **Bad**:
+
+```typescript
+interface StringOrNumber = string | number;  // Wrong tool
+type UserData {                               // Wrong tool
+  name: string;
+  age: number;
+}
+```
+
+✅ **Good**:
+
+```typescript
+type StringOrNumber = string | number;
+
+interface UserData {
+  name: string;
+  age: number;
+}
+```
+
+### Avoiding Any
+
+❌ **Bad**:
+
+```typescript
+function processValue(value: any) {
+  return value.toString();
+}
+```
+
+✅ **Good**:
+
+```typescript
+function processValue(value: unknown) {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value.toString();
+  }
+  throw new TypeError('Value must be string or number');
+}
+```
+
+### Async/Await
+
+❌ **Bad**:
+
+```typescript
+function getData() {
+  return fetch('/api/data')
+    .then((res) => res.json())
+    .catch((err) => console.error(err));
+}
+```
+
+✅ **Good**:
+
+```typescript
+async function getData(): Promise<Data> {
+  try {
+    const res = await fetch('/api/data');
+    return await res.json();
+  } catch (error) {
+    console.error('Failed to fetch data', error);
+    throw error;
+  }
+}
+```
+
+### Control Flow
+
+- Prefer early returns / guard clauses over nested `if` statements
+- Avoid `else` when an `if` block returns
+- Use ternary operators for simple conditional assignments
+
+### Early Returns
+
+❌ **Bad**:
+
+```typescript
+function processUser(user: User | null) {
+  if (user) {
+    if (user.isActive) {
+      // Process active user
+      saveUser(user);
+    } else {
+      throw new Error('User is inactive');
+    }
+  } else {
+    throw new Error('User not found');
+  }
+}
+```
+
+✅ **Good**:
+
+```typescript
+function processUser(user: User | null) {
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  if (!user.isActive) {
+    throw new Error('User is inactive');
+  }
+
+  // Process active user
+  saveUser(user);
+}
+```
+
+### Formatting
+
+- Always use a separate line for `if (x) { return }` (don't make it on one line)
+
+```typescript
+if (true) {
+  return;
+}
+```
+
+## Common Commands
+
+- Type check: `tsc --noEmit`
+- Lint: `eslint . --ext .ts`
+- Format: `prettier --write .`

@@ -1,0 +1,179 @@
+---
+description: Standards for using React Hooks, custom hooks, and hook performance.
+globs: **/*.{tsx,ts}
+alwaysApply: false
+---
+
+# React Hooks
+
+Standards and conventions for using React Hooks.
+
+## Context
+
+Apply this rule when working with React Hooks or creating custom hooks.
+
+## Standards
+
+### Hooks Usage
+
+- Follow Rules of Hooks (don't call conditionally)
+- Keep hooks focused on single concerns
+- Avoid using `.then` syntax in `useEffect`; use async/await inside an IIFE or separate function
+- Avoid business logic and fetching inside components; move to custom hooks
+- Avoid `useEffect` for data transformation; calculate derived state during render
+- Avoid `useEffect` for handling user events; use event handlers instead
+- Use `useEffect` primarily for synchronizing with external systems
+
+### Performance Hooks
+
+- Use `useMemo` for expensive calculations
+- Use `useCallback` for callback stability (especially when passing to `React.memo` components)
+- Avoid inline object/array literals in dependency arrays
+
+### Custom Hooks
+
+- Extract custom hooks for reusable logic
+- Name custom hooks with `use` prefix
+- Name hook parameters interface `Params` if not exported, or `{HookName}Params` if exported
+
+## Examples
+
+### Avoiding Unnecessary Effects
+
+❌ **Bad**:
+
+```tsx
+function Form() {
+  const [firstName, setFirstName] = useState('Taylor');
+  const [lastName, setLastName] = useState('Swift');
+  const [fullName, setFullName] = useState('');
+
+  // 🔴 Avoid: Redundant state and unnecessary Effect
+  useEffect(() => {
+    setFullName(firstName + ' ' + lastName);
+  }, [firstName, lastName]);
+
+  return <div>{fullName}</div>;
+}
+```
+
+✅ **Good**:
+
+```tsx
+function Form() {
+  const [firstName, setFirstName] = useState('Taylor');
+  const [lastName, setLastName] = useState('Swift');
+  
+  // ✅ Good: Calculated during rendering
+  const fullName = firstName + ' ' + lastName;
+
+  return <div>{fullName}</div>;
+}
+```
+
+### Performance Optimization (useCallback/useMemo)
+
+❌ **Bad**:
+
+```tsx
+function ParentComponent() {
+  // Function recreated on every render
+  const handleClick = () => {
+    console.log('clicked');
+  };
+
+  return (
+    <div>
+      {/* Inline object literal breaks memoization */}
+      <ExpensiveChild onAction={handleClick} config={{ theme: 'dark' }} />
+    </div>
+  );
+}
+```
+
+✅ **Good**:
+
+```tsx
+import { Box } from '@mui/material';
+
+// Define static objects outside component
+const config = { theme: 'dark' };
+
+const ParentComponent: React.FC = () => {
+  // Memoize callback
+  const handleClick = useCallback(() => {
+    console.log('clicked');
+  }, []);
+
+  return (
+    <Box>
+      <ExpensiveChild onAction={handleClick} config={config} />
+    </Box>
+  );
+};
+```
+
+### Separation of Concerns / Custom Hooks
+
+❌ **Bad**:
+
+```tsx
+function MyComponent() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/data')
+      .then((r) => r.json())
+      .then(setData);
+  }, []);
+
+  return <div>{data?.value}</div>;
+}
+```
+
+✅ **Good**:
+
+```tsx
+import { Box, CircularProgress } from '@mui/material';
+
+interface Params {
+  url: string;
+}
+
+function useData<T>(params: Params) {
+  const { url } = params;
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(url);
+        const json = await response.json();
+        if (isMounted) setData(json);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [url]);
+
+  return { data, loading };
+}
+
+function MyComponent() {
+  const { data, loading } = useData<DataType>({ url: '/api/data' });
+
+  if (loading) return <CircularProgress />;
+  return <Box>{data?.value}</Box>;
+}
+```

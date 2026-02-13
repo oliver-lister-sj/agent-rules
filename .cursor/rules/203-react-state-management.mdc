@@ -1,0 +1,23 @@
+---
+description: Standards for React state management.
+globs: **/*.{tsx,ts}
+alwaysApply: false
+---
+
+# React State Management
+
+Standards and conventions for managing state in React applications.
+
+## Context
+
+Apply this rule when deciding how to manage state in React components.
+
+## Standards
+
+### State Management
+
+- Use `useState` for local component state
+- Use `useReducer` for complex state logic
+- Lift state up when shared between components
+- Use context for widely-shared state or to avoid prop drilling > 3 layers
+- Prefer stateless components where possible for easier testing
