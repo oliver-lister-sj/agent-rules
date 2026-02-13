@@ -1,0 +1,90 @@
+---
+description: Standards for client-side navigation using single-spa. Avoids hard refreshes.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Navigation Standards
+
+## Context
+
+Apply this rule when implementing navigation between pages or routes within the micro-frontend application.
+
+## Standards
+
+### Client-Side Navigation
+
+- **Primary Method**: Use `navigateToUrl` from `single-spa` for imperative navigation.
+- **Avoid Hard Refreshes**: Do NOT use `window.location.href`, `window.location.assign()`, or `window.location.replace()` for internal links, as these cause a full page reload (hard refresh), losing application state.
+- **Anchor Tags**: When using `<a>` tags for internal navigation, ensure they are handled by the single-spa router or intercept the click event to use `navigateToUrl`.
+
+### Route Definitions
+
+- **Use Enums**: Define all route paths in an enum within a constants file (e.g., `src/constants/Routes.ts`).
+- **No Hardcoded Strings**: Do NOT hardcode route strings in components. Use the enum values instead.
+- **Naming**: Use descriptive names for route enums (e.g., `ApplicantRoutes`, `AdminRoutes`).
+
+## Examples
+
+### Defining Routes
+
+```typescript
+// src/constants/Routes.ts
+
+export enum ApplicantRoutes {
+  dashboard = '/dashboard',
+  settings = '/settings',
+  profile = '/profile',
+  jobs = '/jobs',
+}
+```
+
+### Imperative Navigation
+
+❌ **Bad**: Hardcoded string and full page reload
+
+```typescript
+const handleCancel = () => {
+  // 🔴 Bad: Triggers a hard refresh & uses hardcoded string
+  window.location.href = '/dashboard';
+};
+```
+
+✅ **Good**: Uses single-spa and route enum
+
+```typescript
+import { navigateToUrl } from 'single-spa';
+import { ApplicantRoutes } from '@constants/routes';
+
+const handleCancel = () => {
+  // ✅ Good: Client-side navigation with enum
+  navigateToUrl(ApplicantRoutes.dashboard);
+};
+```
+
+### Link Components
+
+❌ **Bad**: Standard anchor tag without handling
+
+```tsx
+// 🔴 Bad: Default behavior causes refresh on most browsers unless intercepted
+<a href="/settings">Settings</a>
+```
+
+✅ **Good**: Handling the click with enum
+
+```tsx
+import { navigateToUrl } from 'single-spa';
+import { ApplicantRoutes } from '@constants/routes';
+
+// ✅ Good: Intercepts click and uses enum
+<a
+  href={ApplicantRoutes.settings}
+  onClick={(e) => {
+    e.preventDefault();
+    navigateToUrl(ApplicantRoutes.settings);
+  }}
+>
+  Settings
+</a>;
+```

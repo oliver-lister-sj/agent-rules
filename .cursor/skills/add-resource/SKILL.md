@@ -36,7 +36,15 @@ Add the new key to the resource definition file.
 2.  Define a context string: `export const myFeatureContext = 'myFeature';`
 3.  Define an enum: `export enum MyFeatureResources { ... }`
 
-### 3. Use the Resource in Code
+### 3. Add the String to Configs (Important!)
+
+Adding the key to the TypeScript enum is only the first step. You MUST also add the actual text value to the configuration repository.
+
+1.  **Use the `manage-configs` skill** to add the string value.
+2.  The key in the config file (e.g., `lang.json`) must match the value you defined in the enum (e.g., `myFeature.newLabel`).
+3.  Refer to the `manage-configs` skill for detailed instructions on locating the correct config file (`base` vs `overrides`) and adding the key-value pair.
+
+### 4. Use the Resource in Code
 
 Update the component to use the new resource.
 
@@ -85,3 +93,7 @@ const MyComponent = () => {
   return <div>{resources.title}</div>;
 };
 ```
+
+## Related Skills
+
+- [manage-configs](../manage-configs/SKILL.md): Use this to add the actual text strings to the configuration files.

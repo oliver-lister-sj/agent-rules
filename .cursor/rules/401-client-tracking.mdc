@@ -1,0 +1,94 @@
+---
+description: Standards for client-side tracking and analytics.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Client-Side Tracking Standards
+
+## Context
+Apply this rule when implementing user event tracking (clicks, page views, etc.) to ensure consistent data collection and analysis.
+
+## Standards
+
+### Tracking Library
+- Use `@swipejobs/fe-client-tracking` for all tracking needs.
+- Import specific tracking functions: `trackClick`, `trackRender`, `trackPage`, etc.
+- Use `ClientTrackingCategory` and `ClientTrackingName` enums for consistent event naming.
+
+### What to Track
+- **User Interactions**: Clicks on buttons, links, toggles, and form submissions that represent meaningful user intent.
+- **Page Views**: Navigation to new pages or views (often handled automatically, but manual tracking may be needed for SPAs/modals).
+- **Errors**: Critical application errors (though often handled by a separate error logging service, tracking user-facing error states is valuable).
+- **Feature Usage**: Engagement with specific features (e.g., "Advanced Matching" toggled).
+
+### Naming Conventions
+- **Events**: Use Title Case (e.g., `SetSkills`, `ViewScorePanel`).
+- **Properties**: Use `snake_case` for custom properties if sending a payload object.
+- **Categories**: Use broad, high-level categories (e.g., `MatchingFactors`, `JobSearch`).
+
+### Implementation
+- **Click Tracking**: Call `trackClick` inside the event handler.
+- **Render/View Tracking**: Call `trackRender` inside a `useEffect` hook when a component mounts or a specific view becomes visible.
+- **Avoid Over-tracking**: Do not track every single mouse movement or scroll unless specifically required for heatmaps. Focus on *actions*.
+
+## Examples
+
+### Click Tracking
+
+❌ **Bad**: Hardcoded strings and generic names
+
+```tsx
+const handleSave = () => {
+  // Bad: Hardcoded strings, generic name
+  track('click', 'save button');
+  saveData();
+};
+```
+
+✅ **Good**: Using Enums and specific functions
+
+```tsx
+import {
+  ClientTrackingCategory,
+  ClientTrackingName,
+  trackClick,
+} from '@swipejobs/fe-client-tracking';
+
+const handleSave = () => {
+  // Good: Structured tracking
+  trackClick(ClientTrackingCategory.UserProfile, ClientTrackingName.SaveProfile);
+  saveData();
+};
+```
+
+### View/Render Tracking
+
+✅ **Good**: Tracking when a modal or panel opens
+
+```tsx
+import { useEffect } from 'react';
+import {
+  ClientTrackingCategory,
+  ClientTrackingName,
+  trackRender,
+} from '@swipejobs/fe-client-tracking';
+
+const TalentScorePanel = ({ open }) => {
+  useEffect(() => {
+    if (open) {
+      trackRender(ClientTrackingCategory.MatchingFactors, ClientTrackingName.ViewScorePanel);
+    }
+  }, [open]);
+
+  return <Drawer open={open}>...</Drawer>;
+};
+```
+
+### Adding New Events
+
+If a new tracking category or name is needed, it must be added to the `fe-client-tracking` repository first.
+
+1.  Check `ClientTrackingCategory` and `ClientTrackingName` enums in `@swipejobs/fe-client-tracking`.
+2.  If missing, create a PR in `fe-client-tracking` to add the new keys.
+3.  Update the package version in your project after the PR is merged and published.

@@ -1,0 +1,141 @@
+---
+description: Standards for web accessibility (a11y) and Lighthouse performance optimization.
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Accessibility & Performance Standards
+
+## Context
+Apply this rule to ensure the application is accessible to all users and achieves high Lighthouse performance scores. Focus on Core Web Vitals (LCP, CLS, INP) and WCAG 2.1 AA compliance.
+
+## Standards
+
+### Accessibility (a11y)
+
+#### Semantic HTML & Structure
+- **Use Semantic Elements**: Prefer native elements (`<button>`, `<nav>`, `<main>`, `<article>`) over generic `<div>` or `<span>` with handlers.
+- **MUI Polymorphism**: Use the `component` prop on MUI components to render semantic tags (e.g., `<Box component="header">`, `<Typography component="h1">`).
+- **Headings**: Maintain a logical heading hierarchy (`h1` -> `h2` -> `h3`). Do not skip levels.
+- **Landmarks**: Ensure page content is contained within landmarks (`<main>`, `<header>`, `<footer>`, `<aside>`).
+
+#### Material-UI Specifics
+- **Icon Buttons**: ALWAYS provide an `aria-label` or `Tooltip` for `IconButton` components that lack visible text.
+- **Images**: `Avatar` and `img` elements must have meaningful `alt` text. Use empty `alt=""` for decorative images.
+- **Forms**:
+  - Inputs must have associated labels (visible or `aria-label`/`aria-labelledby`).
+  - Error messages must be linked via `aria-describedby`.
+- **Contrast**: Ensure custom colors in `sx` props or themes meet WCAG AA contrast ratios (4.5:1 for normal text).
+
+#### Keyboard Navigation
+- **Focus Management**: Ensure custom interactive components are focusable (`tabIndex={0}`) and handle `Enter`/`Space` keys.
+- **Focus Indicators**: Never remove default focus outlines (`outline: none`) without providing a visible alternative.
+- **Skip Links**: Include a "Skip to content" link for keyboard users if the app has a heavy header/nav.
+
+### Performance (Lighthouse & Core Web Vitals)
+
+#### Core Web Vitals
+- **LCP (Largest Contentful Paint)**:
+  - Optimize the largest image/block above the fold.
+  - Preload critical assets (fonts, hero images).
+- **CLS (Cumulative Layout Shift)**:
+  - ALWAYS define explicit `width` and `height` attributes for images and video.
+  - Reserve space for dynamic content (skeletons, min-height containers) to prevent layout jumps.
+- **INP (Interaction to Next Paint)**:
+  - Avoid long-running synchronous tasks on the main thread.
+  - Break up heavy computations using `setTimeout` or `requestIdleCallback`.
+
+#### Bundle Optimization
+- **Imports**: Avoid barrel imports for large libraries.
+  - ✅ `import Button from '@mui/material/Button';`
+  - ❌ `import { Button } from '@mui/material';` (unless tree-shaking is verified)
+- **Code Splitting**: Use `React.lazy` and `Suspense` for route-level splitting and heavy, non-critical components (e.g., complex charts, modals).
+
+#### Asset Optimization
+- **Images**: Serve images in modern formats (WebP, AVIF). Lazy load images below the fold (`loading="lazy"`).
+- **Fonts**: Use `font-display: swap` to ensure text remains visible during font loading.
+
+## Examples
+
+### Semantic Structure with MUI
+
+❌ **Bad**: Generic divs
+```tsx
+// Bad: No semantic meaning
+<Box sx={{ p: 2 }}>
+  <div className="header">Title</div>
+  <div className="content">...</div>
+</Box>
+```
+
+✅ **Good**: Semantic tags via `component` prop
+```tsx
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+
+// Good: Renders as <article> and <header>
+<Box component="article" sx={{ p: 2 }}>
+  <Box component="header">
+    <Typography component="h2" variant="h4">Title</Typography>
+  </Box>
+  <Box component="section">...</Box>
+</Box>
+```
+
+### Accessibility
+
+❌ **Bad**: Non-semantic, inaccessible button
+```tsx
+// Bad: Div used as button, no keyboard support, no label
+<div onClick={handleSubmit} className="btn">
+  <Icon name="send" />
+</div>
+```
+
+✅ **Good**: Semantic MUI button with label
+```tsx
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import SendIcon from '@mui/icons-material/Send';
+
+// Good: Native button behavior, accessible label via Tooltip
+<Tooltip title="Send Message">
+  <IconButton onClick={handleSubmit} aria-label="send message">
+    <SendIcon />
+  </IconButton>
+</Tooltip>
+```
+
+### Layout Stability (CLS)
+
+❌ **Bad**: Image without dimensions causes shift
+```tsx
+// Bad: Browser doesn't know height until image loads
+<img src="avatar.png" alt="User" />
+```
+
+✅ **Good**: Reserved space
+```tsx
+import Box from '@mui/material/Box';
+
+// Good: Aspect ratio reserved
+<Box sx={{ width: 40, height: 40 }}>
+  <img src="avatar.png" alt="User" width="40" height="40" />
+</Box>
+```
+
+### Bundle Size
+
+❌ **Bad**: Barrel import
+```typescript
+import { Button, TextField, Card } from '@mui/material';
+import { Chart } from '@mui/icons-material'; // Imports all icons!
+```
+
+✅ **Good**: Direct imports
+```typescript
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Card from '@mui/material/Card';
+import ChartIcon from '@mui/icons-material/Chart';
+```
